@@ -39,7 +39,9 @@ add_executable(BooleanEngine
     src/GrayCode/GrayCode.cpp
 
     # Graph
-    # src/Graph/Graph.cpp
+    src/Graph/Vertex.cpp
+    src/Graph/Edge.cpp
+    src/Graph/Graph.cpp
 
     # Hypercube
     # src/Hypercube/Hypercube.cpp
@@ -96,4 +98,20 @@ target_include_directories(test_gray PRIVATE include)
 add_test(
     NAME GrayCodeTest
     COMMAND test_gray
+)
+
+add_executable(test_graph
+
+    tests/test_graph.cpp
+
+    src/Graph/Vertex.cpp
+    src/Graph/Edge.cpp
+    src/Graph/Graph.cpp
+)
+
+target_include_directories(test_graph PRIVATE include)
+
+add_test(
+    NAME GraphTest
+    COMMAND test_graph
 )
