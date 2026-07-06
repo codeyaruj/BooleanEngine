@@ -44,7 +44,8 @@ add_executable(BooleanEngine
     src/Graph/Graph.cpp
 
     # Hypercube
-    # src/Hypercube/Hypercube.cpp
+    src/Hypercube/Hypercube.cpp
+    src/Hypercube/HypercubeGenerator.cpp
 
     # Parser
     # src/Parser/Parser.cpp
@@ -114,4 +115,26 @@ target_include_directories(test_graph PRIVATE include)
 add_test(
     NAME GraphTest
     COMMAND test_graph
+)
+
+add_executable(test_hypercube
+
+    tests/test_hypercube.cpp
+
+    src/Hypercube/Hypercube.cpp
+    src/Hypercube/HypercubeGenerator.cpp
+
+    src/Graph/Vertex.cpp
+    src/Graph/Edge.cpp
+    src/Graph/Graph.cpp
+
+    src/Utilities/BinaryUtils.cpp
+    src/Utilities/BitUtils.cpp
+)
+
+target_include_directories(test_hypercube PRIVATE include)
+
+add_test(
+    NAME HypercubeTest
+    COMMAND test_hypercube
 )

@@ -75,6 +75,17 @@ bool Graph::containsVertex(VertexID id) const
     return vertices_.find(id) != vertices_.end();
 }
 
+const Vertex* Graph::getVertex(VertexID id) const
+{
+    const auto it = vertices_.find(id);
+    if (it == vertices_.end())
+    {
+        return nullptr;
+    }
+
+    return &it->second;
+}
+
 std::size_t Graph::vertexCount() const noexcept
 {
     return vertices_.size();

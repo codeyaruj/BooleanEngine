@@ -100,6 +100,12 @@ void testAddingVertices()
     assert(graph.containsVertex(generatedId));
     assert(graph.containsVertex(generatedLabelId));
     assert(!graph.isEmpty());
+
+    const Vertex* vertex = graph.getVertex(1);
+    assert(vertex != nullptr);
+    assert(vertex->getId() == 1);
+    assert(vertex->getLabel() == "one");
+    assert(graph.getVertex(99) == nullptr);
 }
 
 void testDuplicateVertices()

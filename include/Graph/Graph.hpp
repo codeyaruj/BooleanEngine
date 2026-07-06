@@ -57,6 +57,11 @@ public:
     [[nodiscard]] bool containsVertex(VertexID id) const;
 
     /**
+     * @brief Returns a read-only vertex pointer, or nullptr when missing.
+     */
+    [[nodiscard]] const Vertex* getVertex(VertexID id) const;
+
+    /**
      * @brief Returns the number of vertices.
      */
     [[nodiscard]] std::size_t vertexCount() const noexcept;
