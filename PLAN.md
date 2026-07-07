@@ -20,7 +20,7 @@ This file is the running project plan. Update it after every major change with:
 - [x] Hypercube
 - [x] KarnaughMap
 - [x] Parser Infrastructure
-- [ ] Boolean Expression Parser
+- [x] Boolean Expression Parser
 - [ ] Minterm & Truth Table Parsers
 - [ ] Boolean Evaluation Engine
 - [ ] Group Detection
@@ -137,6 +137,25 @@ This file is the running project plan. Update it after every major change with:
   - unique variable counting
 - Added parser infrastructure tests for tokens, tokenizer examples, parser utilities, edge cases, and parser base behavior.
 
+### Boolean Expression Parser
+
+- Added Boolean expression AST node kinds for variables, unary operations, and binary operations.
+- Added Boolean operator enum for NOT, AND, and OR.
+- Added `ExpressionNode` factory functions to preserve AST invariants.
+- Added `ParsedBooleanExpression` as an AST-owning wrapper without reusing the existing Core `BooleanExpression` SOP/POS struct.
+- Added deterministic AST serialization for tests and debugging.
+- Added `BooleanExpressionParser` using recursive descent over the existing token stream.
+- Parser supports:
+  - single-letter variables `A` through `D`
+  - prefix NOT with `!` and `~`
+  - postfix NOT via apostrophe
+  - AND via tokenizer-supported AND tokens
+  - OR via tokenizer-supported OR tokens
+  - parentheses
+- Parser intentionally does not support XOR or constants because the tokenizer does not define tokens for them.
+- Parser performs parsing only. It does not evaluate expressions, generate truth tables, produce minterms, simplify expressions, build K-maps, or export JSON.
+- Added `BooleanExpressionParserTest` covering AST structure, precedence, associativity, nested parentheses, malformed expressions, and tokenizer-to-parser integration.
+
 ### CMake
 
 - Registered Graph, Hypercube, and KarnaughMap sources in the main executable target.
@@ -144,23 +163,19 @@ This file is the running project plan. Update it after every major change with:
 - Included existing placeholder source files in the main target so CMake compiles every current source file.
 - Registered Parser infrastructure sources in the main executable target.
 - Added `ParserInfrastructureTest`.
+- Registered Boolean expression parser sources in the main executable target.
+- Added `BooleanExpressionParserTest`.
 
 ### Verification
 
 - Clean out-of-tree configure/build/test completed successfully.
 - Latest verification command:
-  - `cmake -S . -B /private/tmp/booleanengine-parser-build.1cYKDH`
-  - `cmake --build /private/tmp/booleanengine-parser-build.1cYKDH`
-  - `ctest --test-dir /private/tmp/booleanengine-parser-build.1cYKDH --output-on-failure`
-- Latest result: 6 of 6 tests passed.
+  - `cmake -S . -B /private/tmp/booleanengine-expression-parser-build.pSZUdk`
+  - `cmake --build /private/tmp/booleanengine-expression-parser-build.pSZUdk`
+  - `ctest --test-dir /private/tmp/booleanengine-expression-parser-build.pSZUdk --output-on-failure`
+- Latest result: 7 of 7 tests passed.
 
 ## Remaining
-
-### Boolean Expression Parser
-
-- Parse Boolean expressions into an AST or equivalent internal form.
-- Support operators and precedence consistently.
-- Reject malformed expressions with informative exceptions.
 
 ### Minterm & Truth Table Parsers
 
@@ -245,11 +260,16 @@ This file is the running project plan. Update it after every major change with:
 - Parser infrastructure is intentionally lexical/framework-only and does not parse expressions or minterm semantics yet.
 - Tokenizer emits adjacent variables as separate tokens so future expression parsing can handle implicit AND.
 - Sigma notation is tokenized but not semantically parsed yet.
+- Boolean expression parsing uses recursive descent with precedence `NOT > AND > OR`.
+- Binary AND and OR are left-associative.
+- Prefix NOT is right-associative; postfix apostrophe is parsed as unary NOT on the preceding primary expression.
+- XOR and Boolean constants remain unsupported until tokenizer support is added intentionally.
 - Existing placeholder modules were not rewritten without a clear stable API.
 
 ## Known Issues
 
-- Boolean expression parsing, minterm/truth-table semantic parsing, Expression, Grouping, PrimeImplicants, Simplifier, Exporter, and several related test files are still placeholders.
+- Minterm/truth-table semantic parsing, Grouping, PrimeImplicants, Simplifier, Exporter, and several related test files are still placeholders.
+- The Boolean expression parser builds an AST only; evaluation and truth-table generation are still pending.
 - K-map simplification currently performs a small exhaustive cover search suitable for 2 through 4 variables, not a full standalone Petrick module.
 - K-map group/implicant APIs return minterm sets, not rich implicant objects.
 - ASCII rendering is intentionally simple and not a final visualization layer.

@@ -55,6 +55,7 @@ add_executable(BooleanEngine
     src/Parser/Parser.cpp
     src/Parser/Tokenizer.cpp
     src/Parser/ParserUtilities.cpp
+    src/Parser/BooleanExpressionParser.cpp
     src/Parser/MintermParser.cpp
     src/Parser/TruthTableParser.cpp
 
@@ -192,4 +193,23 @@ target_include_directories(test_parser PRIVATE include)
 add_test(
     NAME ParserInfrastructureTest
     COMMAND test_parser
+)
+
+add_executable(test_boolean_expression_parser
+
+    tests/test_boolean_expression_parser.cpp
+
+    src/Parser/BooleanExpressionParser.cpp
+    src/Parser/Tokenizer.cpp
+    src/Parser/ParserUtilities.cpp
+
+    src/Expression/AST.cpp
+    src/Expression/Expression.cpp
+)
+
+target_include_directories(test_boolean_expression_parser PRIVATE include)
+
+add_test(
+    NAME BooleanExpressionParserTest
+    COMMAND test_boolean_expression_parser
 )
