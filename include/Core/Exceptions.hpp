@@ -33,6 +33,15 @@ public:
     }
 };
 
+class KarnaughMapException : public BooleanEngineException
+{
+public:
+    explicit KarnaughMapException(const std::string& message)
+        : BooleanEngineException(message)
+    {
+    }
+};
+
 class GroupDetectionException : public BooleanEngineException
 {
 public:

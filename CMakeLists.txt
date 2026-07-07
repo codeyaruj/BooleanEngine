@@ -47,6 +47,10 @@ add_executable(BooleanEngine
     src/Hypercube/Hypercube.cpp
     src/Hypercube/HypercubeGenerator.cpp
 
+    # Karnaugh Map
+    src/KarnaughMap/KarnaughMap.cpp
+    src/KarnaughMap/KarnaughMapGenerator.cpp
+
     # Parser
     # src/Parser/Parser.cpp
 
@@ -137,4 +141,31 @@ target_include_directories(test_hypercube PRIVATE include)
 add_test(
     NAME HypercubeTest
     COMMAND test_hypercube
+)
+
+add_executable(test_kmap
+
+    tests/test_kmap.cpp
+
+    src/KarnaughMap/KarnaughMap.cpp
+    src/KarnaughMap/KarnaughMapGenerator.cpp
+
+    src/Hypercube/Hypercube.cpp
+    src/Hypercube/HypercubeGenerator.cpp
+
+    src/Graph/Vertex.cpp
+    src/Graph/Edge.cpp
+    src/Graph/Graph.cpp
+
+    src/Utilities/BinaryUtils.cpp
+    src/Utilities/BitUtils.cpp
+
+    src/GrayCode/GrayCode.cpp
+)
+
+target_include_directories(test_kmap PRIVATE include)
+
+add_test(
+    NAME KarnaughMapTest
+    COMMAND test_kmap
 )
