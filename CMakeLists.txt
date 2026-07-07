@@ -53,6 +53,8 @@ add_executable(BooleanEngine
 
     # Parser
     src/Parser/Parser.cpp
+    src/Parser/Tokenizer.cpp
+    src/Parser/ParserUtilities.cpp
     src/Parser/MintermParser.cpp
     src/Parser/TruthTableParser.cpp
 
@@ -175,4 +177,19 @@ target_include_directories(test_kmap PRIVATE include)
 add_test(
     NAME KarnaughMapTest
     COMMAND test_kmap
+)
+
+add_executable(test_parser
+
+    tests/test_parser.cpp
+
+    src/Parser/Tokenizer.cpp
+    src/Parser/ParserUtilities.cpp
+)
+
+target_include_directories(test_parser PRIVATE include)
+
+add_test(
+    NAME ParserInfrastructureTest
+    COMMAND test_parser
 )
