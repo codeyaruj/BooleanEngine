@@ -1,11 +1,34 @@
 #include <cassert>
 #include <iostream>
+#include <stdexcept>
 
 #include "Utilities/BitUtils.hpp"
 #include "Utilities/BinaryUtils.hpp"
 #include "Utilities/MathUtils.hpp"
 
 using namespace BooleanEngine;
+
+namespace
+{
+
+template <typename Callable>
+void assertThrows(Callable callable)
+{
+    bool threw = false;
+
+    try
+    {
+        callable();
+    }
+    catch (const std::exception&)
+    {
+        threw = true;
+    }
+
+    assert(threw);
+}
+
+} // namespace
 
 int main()
 {
@@ -22,6 +45,8 @@ int main()
     assert(BitUtils::getBit(5, 0) == true);   // 101
     assert(BitUtils::getBit(5, 1) == false);
     assert(BitUtils::getBit(5, 2) == true);
+    assertThrows([] { (void)BitUtils::getBit(5, -1); });
+    assertThrows([] { (void)BitUtils::getBit(5, 32); });
 
     // -----------------------------
     // setBit()
@@ -55,6 +80,8 @@ int main()
     assert(BinaryUtils::fromBinary("1010") == 10);
     assert(BinaryUtils::fromBinary("1111") == 15);
     assert(BinaryUtils::fromBinary("0000") == 0);
+    assertThrows([] { (void)BinaryUtils::toBinary(1, -1); });
+    assertThrows([] { (void)BinaryUtils::fromBinary("1021"); });
 
     // -----------------------------
     // Binary Validation
@@ -79,6 +106,7 @@ int main()
     assert(MathUtils::powerOfTwo(0) == 1);
     assert(MathUtils::powerOfTwo(3) == 8);
     assert(MathUtils::powerOfTwo(5) == 32);
+    assertThrows([] { (void)MathUtils::powerOfTwo(-1); });
 
     std::cout << "=====================================\n";
     std::cout << "All Utilities Tests Passed Successfully!\n";

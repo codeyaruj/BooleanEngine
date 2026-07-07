@@ -1,5 +1,8 @@
 #include "GrayCode/GrayCode.hpp"
 
+#include <limits>
+#include <stdexcept>
+
 namespace GrayCode
 {
 
@@ -22,6 +25,11 @@ unsigned int grayToBinary(unsigned int gray)
 
 std::vector<unsigned int> generateSequence(unsigned int bits)
 {
+    if (bits >= std::numeric_limits<unsigned int>::digits)
+    {
+        throw std::out_of_range("Gray code bit width is too large");
+    }
+
     std::vector<unsigned int> sequence;
 
     unsigned int total = 1u << bits;

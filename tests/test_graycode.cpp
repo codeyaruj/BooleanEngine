@@ -1,7 +1,30 @@
 #include <cassert>
 #include <iostream>
+#include <stdexcept>
 
 #include "GrayCode/GrayCode.hpp"
+
+namespace
+{
+
+template <typename Callable>
+void assertThrows(Callable callable)
+{
+    bool threw = false;
+
+    try
+    {
+        callable();
+    }
+    catch (const std::exception&)
+    {
+        threw = true;
+    }
+
+    assert(threw);
+}
+
+} // namespace
 
 int main()
 {
@@ -28,6 +51,7 @@ int main()
     assert(seq[1] == 1);
     assert(seq[2] == 3);
     assert(seq[3] == 2);
+    assertThrows([] { (void)GrayCode::generateSequence(32); });
 
     // Adjacency
     assert(GrayCode::isAdjacent(0, 1));

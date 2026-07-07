@@ -1,9 +1,8 @@
 #include <algorithm>
-#include <array>
 #include <cassert>
 #include <cstdint>
 #include <iostream>
-#include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "Core/Exceptions.hpp"
@@ -22,39 +21,36 @@ std::vector<int> sorted(std::vector<int> values)
     return values;
 }
 
-std::vector<int> sortedCellNeighbors(const BooleanCell* cell)
+std::vector<uint32_t> sorted(std::vector<uint32_t> values)
 {
-    assert(cell != nullptr);
-    return sorted(cell->neighbors);
+    std::sort(values.begin(), values.end());
+    return values;
 }
 
-void assertThrowsForInvalidDimensions()
+bool containsGroup(const std::vector<std::vector<uint32_t>>& groups, std::vector<uint32_t> expected)
 {
-    bool threwForZero = false;
-    bool threwForFive = false;
+    expected = sorted(std::move(expected));
+
+    return std::any_of(groups.begin(), groups.end(), [&expected](std::vector<uint32_t> group) {
+        return sorted(std::move(group)) == expected;
+    });
+}
+
+template <typename Callable>
+void assertThrowsKMap(Callable callable)
+{
+    bool threw = false;
 
     try
     {
-        const KarnaughMap map = KarnaughMapGenerator::generate(0);
-        (void)map;
+        callable();
     }
     catch (const KarnaughMapException&)
     {
-        threwForZero = true;
+        threw = true;
     }
 
-    try
-    {
-        const KarnaughMap map = KarnaughMapGenerator::generate(5);
-        (void)map;
-    }
-    catch (const KarnaughMapException&)
-    {
-        threwForFive = true;
-    }
-
-    assert(threwForZero);
-    assert(threwForFive);
+    assert(threw);
 }
 
 void assertGeneralShape(const KarnaughMap& map,
@@ -84,6 +80,7 @@ void assertLayout(const KarnaughMap& map, const std::vector<std::vector<uint32_t
             assert(cell->row == static_cast<int>(row));
             assert(cell->column == static_cast<int>(column));
             assert(cell->binaryValue == minterm);
+            assert(cell->variableAssignment.size() == map.dimension());
             assert(map.containsMinterm(minterm));
             assert(map.getCellFromMinterm(minterm) == cell);
             assert(map.getCell(static_cast<std::size_t>(cell->id)) == cell);
@@ -112,23 +109,16 @@ void assertMintermNeighborsMatchHypercube(const KarnaughMap& map)
     }
 }
 
-void testOneVariableMap()
+void testInvalidInputs()
 {
-    const KarnaughMap map = KarnaughMapGenerator::generate(1);
-
-    assertGeneralShape(map, 1, 1, 2);
-    assertLayout(map, {{0, 1}});
-
-    assert(map.getCell(0)->binaryValue == 0);
-    assert(map.getCell(1)->binaryValue == 1);
-    assert(map.getCell(0, 2) == nullptr);
-    assert(map.getCellFromMinterm(2) == nullptr);
-    assert(!map.containsMinterm(2));
-
-    assert(sorted(map.neighbors(0)) == std::vector<int>({1}));
-    assert(sorted(map.neighbors(1)) == std::vector<int>({0}));
-    assert(sortedCellNeighbors(map.getCellFromMinterm(0)) == std::vector<int>({1}));
-    assert(sortedCellNeighbors(map.getCellFromMinterm(1)) == std::vector<int>({0}));
+    assertThrowsKMap([] { (void)KarnaughMapGenerator::generate(0); });
+    assertThrowsKMap([] { (void)KarnaughMapGenerator::generate(1); });
+    assertThrowsKMap([] { (void)KarnaughMapGenerator::generate(5); });
+    assertThrowsKMap([] { (void)KarnaughMapGenerator::fromMinterms(4, {0, 0}); });
+    assertThrowsKMap([] { (void)KarnaughMapGenerator::fromMinterms(4, {16}); });
+    assertThrowsKMap([] { (void)KarnaughMapGenerator::fromMinterms(4, {1}, {1}); });
+    assertThrowsKMap([] { (void)KarnaughMapGenerator::fromMaxterms(4, {1}, {1}); });
+    assertThrowsKMap([] { (void)KarnaughMapGenerator::fromTruthTable(3, {true, false}); });
 }
 
 void testTwoVariableMap()
@@ -148,6 +138,8 @@ void testTwoVariableMap()
 
     for (uint32_t minterm = 0; minterm < map.cellCount(); ++minterm)
     {
+        assert(!map.getCellFromMinterm(minterm)->value);
+        assert(!map.getCellFromMinterm(minterm)->dontCare);
         assert(map.neighbors(minterm).size() == 2);
         assert(map.getCellFromMinterm(minterm)->neighbors.size() == 2);
     }
@@ -199,9 +191,54 @@ void testFourVariableMap()
     }
 }
 
-void testRepeatedAndBoundaryLookups()
+void testConstructionHelpers()
 {
-    const KarnaughMap map = KarnaughMapGenerator::generate(4);
+    const KarnaughMap mintermMap = KarnaughMapGenerator::fromMinterms(4, {0, 1, 2, 3}, {8, 9});
+
+    assert(mintermMap.getCellFromMinterm(0)->value);
+    assert(mintermMap.getCellFromMinterm(3)->value);
+    assert(!mintermMap.getCellFromMinterm(8)->value);
+    assert(mintermMap.getCellFromMinterm(8)->dontCare);
+    assert(mintermMap.getCellFromMinterm(10)->variableAssignment ==
+           std::vector<bool>({true, false, true, false}));
+
+    const KarnaughMap maxtermMap = KarnaughMapGenerator::fromMaxterms(2, {0});
+    assert(!maxtermMap.getCellFromMinterm(0)->value);
+    assert(maxtermMap.getCellFromMinterm(1)->value);
+    assert(maxtermMap.simplifySOP() == "A + B");
+
+    const KarnaughMap truthMap =
+        KarnaughMapGenerator::fromTruthTable(2, {false, true, true, false});
+    assert(truthMap.simplifySOP() == "A'B + AB'");
+}
+
+void testGroupingAndSimplification()
+{
+    const KarnaughMap fullMap = KarnaughMapGenerator::fromMinterms(2, {0, 1, 2, 3});
+    assert(fullMap.primeImplicants() == std::vector<std::vector<uint32_t>>({{0, 1, 2, 3}}));
+    assert(fullMap.essentialPrimeImplicants() ==
+           std::vector<std::vector<uint32_t>>({{0, 1, 2, 3}}));
+    assert(fullMap.simplifySOP() == "1");
+
+    const KarnaughMap singletonMap = KarnaughMapGenerator::fromMinterms(2, {0});
+    assert(singletonMap.simplifySOP() == "A'B'");
+
+    const KarnaughMap pairMap = KarnaughMapGenerator::fromMinterms(2, {0, 1});
+    assert(containsGroup(pairMap.groups(), {0, 1}));
+    assert(pairMap.simplifySOP() == "A'");
+
+    const KarnaughMap cornerWrapMap = KarnaughMapGenerator::fromMinterms(4, {0, 2, 8, 10});
+    assert(containsGroup(cornerWrapMap.groups(), {0, 2, 8, 10}));
+    assert(cornerWrapMap.simplifySOP() == "B'D'");
+
+    const KarnaughMap dontCareMap = KarnaughMapGenerator::fromMinterms(4, {1, 3}, {0, 2});
+    assert(containsGroup(dontCareMap.primeImplicants(), {0, 1, 2, 3}));
+    assert(dontCareMap.simplifySOP() == "A'B'");
+}
+
+void testRepeatedBoundaryAndRendering()
+{
+    const KarnaughMap map = KarnaughMapGenerator::fromMinterms(4, {0, 10}, {15});
 
     const BooleanCell* first = map.getCell(0, 0);
     const BooleanCell* firstAgain = map.getCellFromMinterm(0);
@@ -214,24 +251,30 @@ void testRepeatedAndBoundaryLookups()
     assert(map.getCell(4, 0) == nullptr);
     assert(map.getCell(0, 4) == nullptr);
     assert(map.getCell(16) == nullptr);
+    assert(map.getCellFromMinterm(16) == nullptr);
     assert(map.neighbors(16).empty());
 
-    assert(sortedCellNeighbors(first) == std::vector<int>({1, 3, 4, 12}));
-    assert(sortedCellNeighbors(corner) == std::vector<int>({3, 11, 12, 14}));
+    assert(sorted(first->neighbors) == std::vector<int>({1, 3, 4, 12}));
+    assert(sorted(corner->neighbors) == std::vector<int>({3, 11, 12, 14}));
+
+    const std::string rendered = map.renderAscii();
+    assert(rendered.find("KMap(4 variables)") != std::string::npos);
+    assert(rendered.find('1') != std::string::npos);
+    assert(rendered.find('X') != std::string::npos);
 }
 
 } // namespace
 
 int main()
 {
-    assertThrowsForInvalidDimensions();
-    testOneVariableMap();
+    testInvalidInputs();
     testTwoVariableMap();
     testThreeVariableMap();
     testFourVariableMap();
-    testRepeatedAndBoundaryLookups();
+    testConstructionHelpers();
+    testGroupingAndSimplification();
+    testRepeatedBoundaryAndRendering();
 
-    assertMintermNeighborsMatchHypercube(KarnaughMapGenerator::generate(1));
     assertMintermNeighborsMatchHypercube(KarnaughMapGenerator::generate(2));
     assertMintermNeighborsMatchHypercube(KarnaughMapGenerator::generate(3));
     assertMintermNeighborsMatchHypercube(KarnaughMapGenerator::generate(4));

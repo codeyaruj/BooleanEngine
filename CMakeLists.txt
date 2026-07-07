@@ -52,22 +52,29 @@ add_executable(BooleanEngine
     src/KarnaughMap/KarnaughMapGenerator.cpp
 
     # Parser
-    # src/Parser/Parser.cpp
+    src/Parser/Parser.cpp
+    src/Parser/MintermParser.cpp
+    src/Parser/TruthTableParser.cpp
 
     # Grouping
-    # src/Grouping/Grouping.cpp
+    src/Grouping/GroupDetector.cpp
+    src/Grouping/GroupExpander.cpp
 
     # Prime Implicants
-    # src/PrimeImplicants/PrimeImplicants.cpp
+    src/PrimeImplicants/CoverageMatrix.cpp
+    src/PrimeImplicants/PrimeImplicantFinder.cpp
 
     # Simplifier
-    # src/Simplifier/Simplifier.cpp
+    src/Simplifier/Simplifier.cpp
+    src/Simplifier/Petrick.cpp
 
     # Expression
-    # src/Expression/Expression.cpp
+    src/Expression/AST.cpp
+    src/Expression/Expression.cpp
+    src/Expression/ExpressionGenerator.cpp
 
     # Exporter
-    # src/Exporter/Exporter.cpp
+    src/Exporter/JsonExporter.cpp
 )
 
 # --------------------------------------------------

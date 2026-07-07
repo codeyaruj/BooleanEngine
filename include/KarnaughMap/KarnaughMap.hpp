@@ -5,13 +5,14 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace BooleanEngine
 {
 
 /**
- * @brief Represents a generated Karnaugh Map for one to four variables.
+ * @brief Represents a generated Karnaugh Map for two to four variables.
  *
  * The map stores cells in row-major display order while also providing O(1)
  * lookup by minterm and row/column coordinate. This class only represents the
@@ -73,12 +74,40 @@ public:
     [[nodiscard]] std::vector<int> neighbors(uint32_t minterm) const;
 
     /**
+     * @brief Returns all valid K-map groups as minterm sets.
+     */
+    [[nodiscard]] std::vector<std::vector<uint32_t>> groups() const;
+
+    /**
+     * @brief Returns prime implicants as minterm sets.
+     */
+    [[nodiscard]] std::vector<std::vector<uint32_t>> primeImplicants() const;
+
+    /**
+     * @brief Returns essential prime implicants as minterm sets.
+     */
+    [[nodiscard]] std::vector<std::vector<uint32_t>> essentialPrimeImplicants() const;
+
+    /**
+     * @brief Returns a minimized SOP expression using variables A, B, C, and D.
+     */
+    [[nodiscard]] std::string simplifySOP() const;
+
+    /**
+     * @brief Returns a simple ASCII rendering of the K-map.
+     */
+    [[nodiscard]] std::string renderAscii() const;
+
+    /**
      * @brief Provides read-only access to the underlying hypercube.
      */
     [[nodiscard]] const Hypercube& hypercube() const noexcept;
 
 private:
     [[nodiscard]] std::size_t coordinateIndex(std::size_t row, std::size_t column) const;
+    [[nodiscard]] std::vector<uint32_t> activeMinterms() const;
+    [[nodiscard]] std::vector<uint32_t> oneMinterms() const;
+    [[nodiscard]] std::string groupToTerm(const std::vector<uint32_t>& group) const;
     void buildLookupTables();
     void validate() const;
 

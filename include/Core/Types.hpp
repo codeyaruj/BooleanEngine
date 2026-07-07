@@ -31,6 +31,8 @@ struct BooleanCell
     bool dontCare = false;
 
     std::vector<int> neighbors;
+
+    std::vector<bool> variableAssignment;
 };
 
 
@@ -112,4 +114,3 @@ struct BooleanFunction
 };
 
 } // namespace BooleanEngine
-
