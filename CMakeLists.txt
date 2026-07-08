@@ -229,3 +229,18 @@ add_test(
     NAME MintermParserTest
     COMMAND test_minterm_parser
 )
+
+add_executable(test_truth_table_parser
+
+    tests/test_truth_table_parser.cpp
+
+    src/Parser/TruthTableParser.cpp
+    src/Parser/ParserUtilities.cpp
+)
+
+target_include_directories(test_truth_table_parser PRIVATE include)
+
+add_test(
+    NAME TruthTableParserTest
+    COMMAND test_truth_table_parser
+)

@@ -1,6 +1,6 @@
 # BooleanEngine Plan
 
-Last updated: 2026-07-08
+Last updated: 2026-07-09
 
 This file is the running project plan. Update it after every major change with:
 
@@ -22,7 +22,7 @@ This file is the running project plan. Update it after every major change with:
 - [x] Parser Infrastructure
 - [x] Boolean Expression Parser
 - [x] Minterm Parser
-- [ ] Truth Table Parser
+- [x] Truth Table Parser
 - [ ] Boolean Evaluation Engine
 - [ ] Group Detection
 - [ ] Group Expansion
@@ -178,6 +178,28 @@ This file is the running project plan. Update it after every major change with:
 - Complexity is `O(t + k log k)` time because output indices are sorted, with `O(k)` auxiliary storage.
 - Added `MintermParserTest` covering valid notation, tokenizer integration, manual token streams, malformed syntax, duplicates, overlaps, range errors, variable-count errors, reusable parser objects, and result lifetime.
 
+### Truth Table Parser
+
+- Added `TruthTableParser` for complete line-oriented truth-table notation.
+- Accepted syntax:
+  - header: `A B | F`
+  - rows: `0 1 | 1`
+  - don't-care outputs: `X` or `x`
+- The parser infers `variableCount` from the header input variables.
+- Header identifiers use the existing parser utility identifier rule: one alphabetic character.
+- The parser accepts blank lines and flexible whitespace, but does not support comments.
+- Rows may appear in any order.
+- Complete truth tables are required: exactly `2^variableCount` unique input assignments must be present.
+- Duplicate input assignments throw `ParserException`.
+- Input values must be `0` or `1`.
+- Output values must be `0`, `1`, `X`, or `x`.
+- Output `1` becomes a minterm; output `X` or `x` becomes a don't-care; output `0` is omitted from `BooleanFunction`.
+- Minterms and don't-cares are normalized into ascending order.
+- Domain-size validation uses checked `uint64_t` arithmetic and rejects variable counts outside the Core `BooleanFunction` index range.
+- The parser does not enforce the KarnaughMap 2-through-4-variable limit.
+- Complexity is `O(t + r + k log k)` time, with `O(r + k)` auxiliary storage.
+- Added `TruthTableParserTest` covering valid tables, don't-cares, row order, whitespace, 5-variable support, malformed headers, malformed rows, duplicate assignments, missing rows, invalid values, invalid identifiers, and oversized variable counts.
+
 ### CMake
 
 - Registered Graph, Hypercube, and KarnaughMap sources in the main executable target.
@@ -189,27 +211,29 @@ This file is the running project plan. Update it after every major change with:
 - Added `BooleanExpressionParserTest`.
 - Registered Minterm parser sources in the main executable target.
 - Added `MintermParserTest`.
+- Registered Truth Table parser sources in the main executable target.
+- Added `TruthTableParserTest`.
 
 ### Verification
 
+- Preflight before Truth Table Parser implementation:
+  - `git status`
+  - `git diff --check`
+  - `cmake --build build`
+  - `ctest --test-dir build --output-on-failure`
+  - Result: working tree was clean, Minterm Parser was already committed as `f33ac94`, and 8 of 8 existing tests passed.
 - Preflight before Minterm Parser implementation:
   - `cmake --build build`
   - `ctest --test-dir build --output-on-failure`
   - Result: 7 of 7 existing tests passed.
 - Clean out-of-tree configure/build/test completed successfully.
 - Latest verification command:
-  - `cmake -S . -B /private/tmp/booleanengine-minterm-parser-build.le2PMn`
-  - `cmake --build /private/tmp/booleanengine-minterm-parser-build.le2PMn`
-  - `ctest --test-dir /private/tmp/booleanengine-minterm-parser-build.le2PMn --output-on-failure`
-- Latest result: 8 of 8 tests passed.
+  - `cmake -S . -B /private/tmp/booleanengine-truth-table-parser-build.1BbrT9`
+  - `cmake --build /private/tmp/booleanengine-truth-table-parser-build.1BbrT9`
+  - `ctest --test-dir /private/tmp/booleanengine-truth-table-parser-build.1BbrT9 --output-on-failure`
+- Latest result: 9 of 9 tests passed.
 
 ## Remaining
-
-### Truth Table Parser
-
-- Parse truth tables.
-- Convert accepted truth-table notation into `BooleanFunction`.
-- Validate table size and malformed values.
 
 ### Boolean Evaluation Engine
 
@@ -295,13 +319,20 @@ This file is the running project plan. Update it after every major change with:
 - Minterm parsing uses `TokenType::Or` for the optional don't-care separator, so tokenizer-supported OR lexemes are accepted there.
 - Minterm parser output uses ascending canonical order because listed minterm order has no Boolean meaning.
 - Minterm parser bounds are based on the Core `BooleanFunction` integer storage, not KarnaughMap's 2-through-4-variable scope.
+- Truth-table parsing uses line-oriented row handling because the shared tokenizer intentionally skips whitespace and does not preserve newlines.
+- Truth-table parsing requires complete tables by default to avoid ambiguous missing assignments.
+- Truth-table variable count is inferred from the header rather than supplied separately.
+- Truth-table parser output uses ascending canonical order to match the Minterm Parser.
+- Truth-table parser bounds are based on Core `BooleanFunction` integer storage, not KarnaughMap's dimensional scope.
 - Existing placeholder modules were not rewritten without a clear stable API.
 
 ## Known Issues
 
-- Truth-table semantic parsing, Grouping, PrimeImplicants, Simplifier, Exporter, and several related test files are still placeholders.
+- Grouping, PrimeImplicants, Simplifier, Exporter, and several related test files are still placeholders.
 - The Boolean expression parser builds an AST only; evaluation and truth-table generation are still pending.
 - The Minterm Parser creates `BooleanFunction` data only; it does not evaluate expressions, build truth tables, build K-maps, or simplify logic.
+- The Truth Table Parser creates `BooleanFunction` data only; it does not evaluate expressions, build K-maps, or simplify logic.
+- Truth Table Parser comments are not supported; non-empty stray lines are treated as malformed input.
 - K-map simplification currently performs a small exhaustive cover search suitable for 2 through 4 variables, not a full standalone Petrick module.
 - K-map group/implicant APIs return minterm sets, not rich implicant objects.
 - ASCII rendering is intentionally simple and not a final visualization layer.
