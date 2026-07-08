@@ -213,3 +213,19 @@ add_test(
     NAME BooleanExpressionParserTest
     COMMAND test_boolean_expression_parser
 )
+
+add_executable(test_minterm_parser
+
+    tests/test_minterm_parser.cpp
+
+    src/Parser/MintermParser.cpp
+    src/Parser/Tokenizer.cpp
+    src/Parser/ParserUtilities.cpp
+)
+
+target_include_directories(test_minterm_parser PRIVATE include)
+
+add_test(
+    NAME MintermParserTest
+    COMMAND test_minterm_parser
+)

@@ -1,6 +1,6 @@
 # BooleanEngine Plan
 
-Last updated: 2026-07-07
+Last updated: 2026-07-08
 
 This file is the running project plan. Update it after every major change with:
 
@@ -21,7 +21,8 @@ This file is the running project plan. Update it after every major change with:
 - [x] KarnaughMap
 - [x] Parser Infrastructure
 - [x] Boolean Expression Parser
-- [ ] Minterm & Truth Table Parsers
+- [x] Minterm Parser
+- [ ] Truth Table Parser
 - [ ] Boolean Evaluation Engine
 - [ ] Group Detection
 - [ ] Group Expansion
@@ -156,6 +157,27 @@ This file is the running project plan. Update it after every major change with:
 - Parser performs parsing only. It does not evaluate expressions, generate truth tables, produce minterms, simplify expressions, build K-maps, or export JSON.
 - Added `BooleanExpressionParserTest` covering AST structure, precedence, associativity, nested parentheses, malformed expressions, and tokenizer-to-parser integration.
 
+### Minterm Parser
+
+- Added `MintermParser` for canonical sum-of-minterms notation over the existing tokenizer output.
+- Added token-stream and source-string parse APIs that require the caller to provide `variableCount`.
+- Accepted notation:
+  - `Σm()`
+  - `Σm(0)`
+  - `Σm(1,3,7)`
+  - `Σm(1,3,7) + d(0,2)`
+- The source-string overload delegates lexical analysis to `Tokenizer`; it does not scan input manually.
+- The tokenizer represents `Σm` as separate `Sigma` and `Variable("m")` tokens.
+- Don't-care notation is represented as `Variable("d")` followed by a parenthesized index list.
+- Empty minterm lists and empty don't-care lists are accepted.
+- Minterm and don't-care indices are normalized into ascending order in `BooleanFunction`.
+- Duplicate minterms, duplicate don't-cares, and minterm/don't-care overlaps throw `ParserException`.
+- Index range validation uses checked `uint64_t` arithmetic and rejects values outside `[0, 2^variableCount - 1]`.
+- The parser does not enforce the KarnaughMap 2-through-4-variable limit; it supports the range that fits the Core `BooleanFunction` index storage.
+- Result construction directly fills `BooleanFunction::variableCount`, `BooleanFunction::minterms`, and `BooleanFunction::dontCares`.
+- Complexity is `O(t + k log k)` time because output indices are sorted, with `O(k)` auxiliary storage.
+- Added `MintermParserTest` covering valid notation, tokenizer integration, manual token streams, malformed syntax, duplicates, overlaps, range errors, variable-count errors, reusable parser objects, and result lifetime.
+
 ### CMake
 
 - Registered Graph, Hypercube, and KarnaughMap sources in the main executable target.
@@ -165,25 +187,29 @@ This file is the running project plan. Update it after every major change with:
 - Added `ParserInfrastructureTest`.
 - Registered Boolean expression parser sources in the main executable target.
 - Added `BooleanExpressionParserTest`.
+- Registered Minterm parser sources in the main executable target.
+- Added `MintermParserTest`.
 
 ### Verification
 
+- Preflight before Minterm Parser implementation:
+  - `cmake --build build`
+  - `ctest --test-dir build --output-on-failure`
+  - Result: 7 of 7 existing tests passed.
 - Clean out-of-tree configure/build/test completed successfully.
 - Latest verification command:
-  - `cmake -S . -B /private/tmp/booleanengine-expression-parser-build.pSZUdk`
-  - `cmake --build /private/tmp/booleanengine-expression-parser-build.pSZUdk`
-  - `ctest --test-dir /private/tmp/booleanengine-expression-parser-build.pSZUdk --output-on-failure`
-- Latest result: 7 of 7 tests passed.
+  - `cmake -S . -B /private/tmp/booleanengine-minterm-parser-build.le2PMn`
+  - `cmake --build /private/tmp/booleanengine-minterm-parser-build.le2PMn`
+  - `ctest --test-dir /private/tmp/booleanengine-minterm-parser-build.le2PMn --output-on-failure`
+- Latest result: 8 of 8 tests passed.
 
 ## Remaining
 
-### Minterm & Truth Table Parsers
+### Truth Table Parser
 
-- Parse minterm lists.
-- Parse maxterm lists.
-- Parse don't-care lists.
 - Parse truth tables.
-- Validate duplicates, overlaps, and out-of-range terms.
+- Convert accepted truth-table notation into `BooleanFunction`.
+- Validate table size and malformed values.
 
 ### Boolean Evaluation Engine
 
@@ -264,12 +290,18 @@ This file is the running project plan. Update it after every major change with:
 - Binary AND and OR are left-associative.
 - Prefix NOT is right-associative; postfix apostrophe is parsed as unary NOT on the preceding primary expression.
 - XOR and Boolean constants remain unsupported until tokenizer support is added intentionally.
+- Minterm notation receives `variableCount` from the caller because the notation cannot infer it unambiguously.
+- Minterm parsing remains standalone instead of deriving from `Parser`, because the base parser API has no variable-count parameter.
+- Minterm parsing uses `TokenType::Or` for the optional don't-care separator, so tokenizer-supported OR lexemes are accepted there.
+- Minterm parser output uses ascending canonical order because listed minterm order has no Boolean meaning.
+- Minterm parser bounds are based on the Core `BooleanFunction` integer storage, not KarnaughMap's 2-through-4-variable scope.
 - Existing placeholder modules were not rewritten without a clear stable API.
 
 ## Known Issues
 
-- Minterm/truth-table semantic parsing, Grouping, PrimeImplicants, Simplifier, Exporter, and several related test files are still placeholders.
+- Truth-table semantic parsing, Grouping, PrimeImplicants, Simplifier, Exporter, and several related test files are still placeholders.
 - The Boolean expression parser builds an AST only; evaluation and truth-table generation are still pending.
+- The Minterm Parser creates `BooleanFunction` data only; it does not evaluate expressions, build truth tables, build K-maps, or simplify logic.
 - K-map simplification currently performs a small exhaustive cover search suitable for 2 through 4 variables, not a full standalone Petrick module.
 - K-map group/implicant APIs return minterm sets, not rich implicant objects.
 - ASCII rendering is intentionally simple and not a final visualization layer.
