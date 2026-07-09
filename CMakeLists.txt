@@ -74,6 +74,7 @@ add_executable(BooleanEngine
     # Expression
     src/Expression/AST.cpp
     src/Expression/Expression.cpp
+    src/Expression/ExpressionUtilities.cpp
     src/Expression/ExpressionGenerator.cpp
 
     # Evaluation
@@ -215,6 +216,26 @@ target_include_directories(test_boolean_expression_parser PRIVATE include)
 add_test(
     NAME BooleanExpressionParserTest
     COMMAND test_boolean_expression_parser
+)
+
+add_executable(test_expression_utilities
+
+    tests/test_expression_utilities.cpp
+
+    src/Expression/ExpressionUtilities.cpp
+    src/Expression/AST.cpp
+    src/Expression/Expression.cpp
+
+    src/Parser/BooleanExpressionParser.cpp
+    src/Parser/Tokenizer.cpp
+    src/Parser/ParserUtilities.cpp
+)
+
+target_include_directories(test_expression_utilities PRIVATE include)
+
+add_test(
+    NAME ExpressionUtilitiesTest
+    COMMAND test_expression_utilities
 )
 
 add_executable(test_minterm_parser

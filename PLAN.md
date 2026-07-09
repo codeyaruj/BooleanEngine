@@ -24,7 +24,8 @@ This file is the running project plan. Update it after every major change with:
 - [x] Minterm Parser
 - [x] Truth Table Parser
 - [x] Boolean Evaluation Core
-- [ ] Boolean Evaluation Engine Completion
+- [x] AST Variable Collection
+- [ ] Expression to Truth Table Generator
 - [ ] Group Detection
 - [ ] Group Expansion
 - [ ] Group Reduction
@@ -220,6 +221,21 @@ This file is the running project plan. Update it after every major change with:
 - Complexity is `O(m)` time in the number of visited AST nodes, with `O(h)` recursion stack space for AST height. Short-circuiting can visit fewer than `m` nodes.
 - Added `BooleanEvaluatorTest` covering variables, NOT, AND, OR, precedence, parentheses, mixed expressions, direct AST evaluation, reusable evaluator objects, short-circuiting, missing assignments, and empty parsed expressions.
 
+### AST Variable Collection
+
+- Added `ExpressionUtilities` for read-only structural inspection of expression ASTs.
+- Public APIs:
+  - `collectVariables(const ParsedBooleanExpression&)`
+  - `collectVariables(const ExpressionNode&)`
+- Variable collection lives in the Expression module because it inspects AST structure and does not evaluate expressions.
+- Variables are returned as a deterministic ascending `std::vector<std::string>`.
+- Duplicate variables are removed.
+- The implementation uses an internal `std::set<std::string>`.
+- Empty parsed expressions and defensive malformed AST states throw `ParserException`, matching existing Expression module error handling.
+- The public AST factories prevent empty variable names, null unary operands, and missing binary children.
+- Complexity is `O(m log v)` time and `O(v + h)` space, where `m` is AST node count, `v` is unique variable count, and `h` is AST height.
+- Added `ExpressionUtilitiesTest` covering single variables, duplicates, sorted order, unary/postfix NOT, nested expressions, repeated variables, parentheses, direct `ExpressionNode` collection, reusable calls, empty parsed expressions, and factory-enforced malformed-node prevention.
+
 ### CMake
 
 - Registered Graph, Hypercube, and KarnaughMap sources in the main executable target.
@@ -235,9 +251,17 @@ This file is the running project plan. Update it after every major change with:
 - Added `TruthTableParserTest`.
 - Registered Boolean evaluator sources in the main executable target.
 - Added `BooleanEvaluatorTest`.
+- Registered Expression utilities sources in the main executable target.
+- Added `ExpressionUtilitiesTest`.
 
 ### Verification
 
+- Preflight before AST Variable Collection implementation:
+  - `git status`
+  - `git log --oneline -5`
+  - `cmake --build build`
+  - `ctest --test-dir build --output-on-failure`
+  - Result: working tree was clean, current history included `94b577d`, and 10 of 10 existing tests passed.
 - Preflight before Boolean Evaluation Core implementation:
   - `git status`
   - `git log --oneline -5`
@@ -256,19 +280,18 @@ This file is the running project plan. Update it after every major change with:
   - Result: 7 of 7 existing tests passed.
 - Clean out-of-tree configure/build/test completed successfully.
 - Latest verification command:
-  - `cmake -S . -B /private/tmp/booleanengine-evaluator-build.N0Ih0H`
-  - `cmake --build /private/tmp/booleanengine-evaluator-build.N0Ih0H`
-  - `ctest --test-dir /private/tmp/booleanengine-evaluator-build.N0Ih0H --output-on-failure`
-- Latest result: 10 of 10 tests passed.
+  - `cmake -S . -B /private/tmp/booleanengine-variable-collector-build.DN9u8u`
+  - `cmake --build /private/tmp/booleanengine-variable-collector-build.DN9u8u`
+  - `ctest --test-dir /private/tmp/booleanengine-variable-collector-build.DN9u8u --output-on-failure`
+- Latest result: 11 of 11 tests passed.
 
 ## Remaining
 
-### Boolean Evaluation Engine Completion
+### Expression to Truth Table Generator
 
 - Generate truth tables from expressions.
 - Convert parsed expressions to `BooleanFunction`.
 - Cross-check expression evaluation against K-map construction.
-- Add variable collection from ASTs.
 
 ### Group Detection
 
@@ -356,6 +379,8 @@ This file is the running project plan. Update it after every major change with:
 - Boolean evaluation is AST-only and intentionally does not parse source text.
 - Boolean evaluation uses `EvaluationException` for missing assignments, empty parsed expressions, and malformed AST state.
 - Boolean evaluation depends only on Core and Expression; parser integration is used only in tests.
+- Variable collection is structural AST inspection, so it lives in the Expression module rather than Evaluation.
+- Variable collection returns sorted unique names for deterministic future truth-table generation.
 - Existing placeholder modules were not rewritten without a clear stable API.
 
 ## Known Issues
@@ -363,6 +388,7 @@ This file is the running project plan. Update it after every major change with:
 - Grouping, PrimeImplicants, Simplifier, Exporter, and several related test files are still placeholders.
 - The Boolean expression parser builds an AST only; expression truth-table generation is still pending.
 - Boolean AST evaluation for concrete assignments is implemented, but expression truth-table generation is still pending.
+- AST variable collection is implemented, but expression truth-table generation is still pending.
 - The Minterm Parser creates `BooleanFunction` data only; it does not evaluate expressions, build truth tables, build K-maps, or simplify logic.
 - The Truth Table Parser creates `BooleanFunction` data only; it does not evaluate expressions, build K-maps, or simplify logic.
 - Truth Table Parser comments are not supported; non-empty stray lines are treated as malformed input.
