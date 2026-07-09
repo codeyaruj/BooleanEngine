@@ -76,6 +76,9 @@ add_executable(BooleanEngine
     src/Expression/Expression.cpp
     src/Expression/ExpressionGenerator.cpp
 
+    # Evaluation
+    src/Evaluation/BooleanEvaluator.cpp
+
     # Exporter
     src/Exporter/JsonExporter.cpp
 )
@@ -243,4 +246,25 @@ target_include_directories(test_truth_table_parser PRIVATE include)
 add_test(
     NAME TruthTableParserTest
     COMMAND test_truth_table_parser
+)
+
+add_executable(test_boolean_evaluator
+
+    tests/test_boolean_evaluator.cpp
+
+    src/Evaluation/BooleanEvaluator.cpp
+
+    src/Parser/BooleanExpressionParser.cpp
+    src/Parser/Tokenizer.cpp
+    src/Parser/ParserUtilities.cpp
+
+    src/Expression/AST.cpp
+    src/Expression/Expression.cpp
+)
+
+target_include_directories(test_boolean_evaluator PRIVATE include)
+
+add_test(
+    NAME BooleanEvaluatorTest
+    COMMAND test_boolean_evaluator
 )

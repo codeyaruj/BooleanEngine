@@ -23,7 +23,8 @@ This file is the running project plan. Update it after every major change with:
 - [x] Boolean Expression Parser
 - [x] Minterm Parser
 - [x] Truth Table Parser
-- [ ] Boolean Evaluation Engine
+- [x] Boolean Evaluation Core
+- [ ] Boolean Evaluation Engine Completion
 - [ ] Group Detection
 - [ ] Group Expansion
 - [ ] Group Reduction
@@ -200,6 +201,25 @@ This file is the running project plan. Update it after every major change with:
 - Complexity is `O(t + r + k log k)` time, with `O(r + k)` auxiliary storage.
 - Added `TruthTableParserTest` covering valid tables, don't-cares, row order, whitespace, 5-variable support, malformed headers, malformed rows, duplicate assignments, missing rows, invalid values, invalid identifiers, and oversized variable counts.
 
+### Boolean Evaluation Core
+
+- Added `BooleanEvaluator` for read-only evaluation of existing Boolean expression ASTs.
+- Added `EvaluationException` under the shared Core exception hierarchy for runtime evaluation failures.
+- Public evaluator APIs:
+  - evaluate a `ParsedBooleanExpression`
+  - evaluate an `ExpressionNode`
+- Supported AST behavior:
+  - `ExpressionNodeKind::Variable` looks up the variable name in the assignment map.
+  - `BooleanOperator::Not` negates its operand.
+  - `BooleanOperator::And` evaluates with natural short-circuit behavior.
+  - `BooleanOperator::Or` evaluates with natural short-circuit behavior.
+- Prefix and postfix NOT both evaluate through the same normalized `BooleanOperator::Not` AST operator.
+- Missing variable assignments throw `EvaluationException`.
+- Empty parsed expressions throw `EvaluationException`.
+- The evaluator does not parse source text, generate truth tables, produce minterms, build K-maps, simplify, or export JSON.
+- Complexity is `O(m)` time in the number of visited AST nodes, with `O(h)` recursion stack space for AST height. Short-circuiting can visit fewer than `m` nodes.
+- Added `BooleanEvaluatorTest` covering variables, NOT, AND, OR, precedence, parentheses, mixed expressions, direct AST evaluation, reusable evaluator objects, short-circuiting, missing assignments, and empty parsed expressions.
+
 ### CMake
 
 - Registered Graph, Hypercube, and KarnaughMap sources in the main executable target.
@@ -213,9 +233,17 @@ This file is the running project plan. Update it after every major change with:
 - Added `MintermParserTest`.
 - Registered Truth Table parser sources in the main executable target.
 - Added `TruthTableParserTest`.
+- Registered Boolean evaluator sources in the main executable target.
+- Added `BooleanEvaluatorTest`.
 
 ### Verification
 
+- Preflight before Boolean Evaluation Core implementation:
+  - `git status`
+  - `git log --oneline -5`
+  - `cmake --build build`
+  - `ctest --test-dir build --output-on-failure`
+  - Result: working tree was clean, current history included `3054f8e`, and 9 of 9 existing tests passed.
 - Preflight before Truth Table Parser implementation:
   - `git status`
   - `git diff --check`
@@ -228,18 +256,19 @@ This file is the running project plan. Update it after every major change with:
   - Result: 7 of 7 existing tests passed.
 - Clean out-of-tree configure/build/test completed successfully.
 - Latest verification command:
-  - `cmake -S . -B /private/tmp/booleanengine-truth-table-parser-build.1BbrT9`
-  - `cmake --build /private/tmp/booleanengine-truth-table-parser-build.1BbrT9`
-  - `ctest --test-dir /private/tmp/booleanengine-truth-table-parser-build.1BbrT9 --output-on-failure`
-- Latest result: 9 of 9 tests passed.
+  - `cmake -S . -B /private/tmp/booleanengine-evaluator-build.N0Ih0H`
+  - `cmake --build /private/tmp/booleanengine-evaluator-build.N0Ih0H`
+  - `ctest --test-dir /private/tmp/booleanengine-evaluator-build.N0Ih0H --output-on-failure`
+- Latest result: 10 of 10 tests passed.
 
 ## Remaining
 
-### Boolean Evaluation Engine
+### Boolean Evaluation Engine Completion
 
-- Evaluate parsed Boolean expressions for assignments.
 - Generate truth tables from expressions.
+- Convert parsed expressions to `BooleanFunction`.
 - Cross-check expression evaluation against K-map construction.
+- Add variable collection from ASTs.
 
 ### Group Detection
 
@@ -324,12 +353,16 @@ This file is the running project plan. Update it after every major change with:
 - Truth-table variable count is inferred from the header rather than supplied separately.
 - Truth-table parser output uses ascending canonical order to match the Minterm Parser.
 - Truth-table parser bounds are based on Core `BooleanFunction` integer storage, not KarnaughMap's dimensional scope.
+- Boolean evaluation is AST-only and intentionally does not parse source text.
+- Boolean evaluation uses `EvaluationException` for missing assignments, empty parsed expressions, and malformed AST state.
+- Boolean evaluation depends only on Core and Expression; parser integration is used only in tests.
 - Existing placeholder modules were not rewritten without a clear stable API.
 
 ## Known Issues
 
 - Grouping, PrimeImplicants, Simplifier, Exporter, and several related test files are still placeholders.
-- The Boolean expression parser builds an AST only; evaluation and truth-table generation are still pending.
+- The Boolean expression parser builds an AST only; expression truth-table generation is still pending.
+- Boolean AST evaluation for concrete assignments is implemented, but expression truth-table generation is still pending.
 - The Minterm Parser creates `BooleanFunction` data only; it does not evaluate expressions, build truth tables, build K-maps, or simplify logic.
 - The Truth Table Parser creates `BooleanFunction` data only; it does not evaluate expressions, build K-maps, or simplify logic.
 - Truth Table Parser comments are not supported; non-empty stray lines are treated as malformed input.

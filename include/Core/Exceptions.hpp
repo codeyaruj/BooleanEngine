@@ -24,6 +24,15 @@ public:
     }
 };
 
+class EvaluationException : public BooleanEngineException
+{
+public:
+    explicit EvaluationException(const std::string& message)
+        : BooleanEngineException(message)
+    {
+    }
+};
+
 class HypercubeException : public BooleanEngineException
 {
 public:
