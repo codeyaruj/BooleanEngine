@@ -1,6 +1,6 @@
 # BooleanEngine Plan
 
-Last updated: 2026-07-09
+Last updated: 2026-07-10
 
 This file is the running project plan. Update it after every major change with:
 
@@ -25,7 +25,8 @@ This file is the running project plan. Update it after every major change with:
 - [x] Truth Table Parser
 - [x] Boolean Evaluation Core
 - [x] AST Variable Collection
-- [ ] Expression to Truth Table Generator
+- [x] Expression to Truth Table Generator
+- [ ] Expression to BooleanFunction Conversion
 - [ ] Group Detection
 - [ ] Group Expansion
 - [ ] Group Reduction
@@ -236,6 +237,25 @@ This file is the running project plan. Update it after every major change with:
 - Complexity is `O(m log v)` time and `O(v + h)` space, where `m` is AST node count, `v` is unique variable count, and `h` is AST height.
 - Added `ExpressionUtilitiesTest` covering single variables, duplicates, sorted order, unary/postfix NOT, nested expressions, repeated variables, parentheses, direct `ExpressionNode` collection, reusable calls, empty parsed expressions, and factory-enforced malformed-node prevention.
 
+### Expression to Truth Table Generator
+
+- Added `TruthTableGenerator` in the Evaluation module because it evaluates an existing AST over every assignment and performs no parsing.
+- Public generation APIs:
+  - `generate(const ParsedBooleanExpression&)`
+  - `generate(const ExpressionNode&)`
+- Added owned truth-table data structures:
+  - `TruthTableRow` stores a complete `BooleanEvaluator::AssignmentMap` and its Boolean output.
+  - `GeneratedTruthTable` stores the deterministic variable list and all generated rows.
+- Variable ordering uses the ascending lexicographic order returned by `collectVariables()`.
+- Row ordering uses binary counting with the first variable as the most significant bit.
+- The generator composes `collectVariables()` and `BooleanEvaluator`; it does not parse source text or duplicate AST traversal semantics.
+- Domain size is computed by checked doubling rather than an unchecked bit shift.
+- Materialization is capped at 65,536 rows, supporting up to 16 unique variables without applying the K-map 2-through-4-variable restriction.
+- Empty parsed expressions and oversized domains throw `EvaluationException`.
+- Evaluator and collector exceptions are not swallowed.
+- Complexity is `O(m log v + 2^v * (v + m))` time and `O(2^v * v)` result space, with `O(h)` evaluator recursion space, where `m` is AST node count, `v` is unique variable count, and `h` is AST height.
+- Added `TruthTableGeneratorTest` covering single variables, prefix and postfix NOT, AND, OR, precedence, parentheses, sorted variables, binary row ordering, duplicate variables, a complete three-variable table, generator reuse, direct AST generation, multi-character variables, empty expressions, and oversized domains.
+
 ### CMake
 
 - Registered Graph, Hypercube, and KarnaughMap sources in the main executable target.
@@ -253,9 +273,17 @@ This file is the running project plan. Update it after every major change with:
 - Added `BooleanEvaluatorTest`.
 - Registered Expression utilities sources in the main executable target.
 - Added `ExpressionUtilitiesTest`.
+- Registered Truth Table Generator sources in the main executable target.
+- Added `TruthTableGeneratorTest`.
 
 ### Verification
 
+- Preflight before Expression to Truth Table Generator implementation:
+  - `git status`
+  - `git log --oneline -5`
+  - `cmake --build build`
+  - `ctest --test-dir build --output-on-failure`
+  - Result: working tree was clean, current history included `93b0993`, and 11 of 11 existing tests passed.
 - Preflight before AST Variable Collection implementation:
   - `git status`
   - `git log --oneline -5`
@@ -279,19 +307,20 @@ This file is the running project plan. Update it after every major change with:
   - `ctest --test-dir build --output-on-failure`
   - Result: 7 of 7 existing tests passed.
 - Clean out-of-tree configure/build/test completed successfully.
-- Latest verification command:
-  - `cmake -S . -B /private/tmp/booleanengine-variable-collector-build.DN9u8u`
-  - `cmake --build /private/tmp/booleanengine-variable-collector-build.DN9u8u`
-  - `ctest --test-dir /private/tmp/booleanengine-variable-collector-build.DN9u8u --output-on-failure`
-- Latest result: 11 of 11 tests passed.
+- Latest verification commands:
+  - `cmake -S . -B /private/tmp/booleanengine-truth-table-generator-build.M3v80V`
+  - `cmake --build /private/tmp/booleanengine-truth-table-generator-build.M3v80V`
+  - `ctest --test-dir /private/tmp/booleanengine-truth-table-generator-build.M3v80V --output-on-failure`
+  - `git diff --check`
+- Latest result: configure and build succeeded with no compiler warnings; 12 of 12 tests passed and `git diff --check` reported no errors.
 
 ## Remaining
 
-### Expression to Truth Table Generator
+### Expression to BooleanFunction Conversion
 
-- Generate truth tables from expressions.
-- Convert parsed expressions to `BooleanFunction`.
-- Cross-check expression evaluation against K-map construction.
+- Convert generated expression truth tables into canonical `BooleanFunction` data.
+- Keep minterm generation and don't-care policy outside `TruthTableGenerator`.
+- Cross-check converted expression results against K-map construction in the later integration milestone.
 
 ### Group Detection
 
@@ -381,14 +410,16 @@ This file is the running project plan. Update it after every major change with:
 - Boolean evaluation depends only on Core and Expression; parser integration is used only in tests.
 - Variable collection is structural AST inspection, so it lives in the Expression module rather than Evaluation.
 - Variable collection returns sorted unique names for deterministic future truth-table generation.
+- Expression truth-table generation lives in Evaluation and consumes AST objects rather than source text.
+- Generated table variables use sorted lexicographic order; rows use binary-counting order with the first variable as the most significant bit.
+- Complete table generation is capped at 65,536 rows to bound owned per-row assignment maps; this is a materialization limit, not a K-map variable limit.
 - Existing placeholder modules were not rewritten without a clear stable API.
 
 ## Known Issues
 
 - Grouping, PrimeImplicants, Simplifier, Exporter, and several related test files are still placeholders.
-- The Boolean expression parser builds an AST only; expression truth-table generation is still pending.
-- Boolean AST evaluation for concrete assignments is implemented, but expression truth-table generation is still pending.
-- AST variable collection is implemented, but expression truth-table generation is still pending.
+- Expression-to-`BooleanFunction` conversion is still pending; generated truth tables currently remain evaluation data only.
+- Complete generated truth tables are intentionally limited to 65,536 rows because every row owns an assignment map.
 - The Minterm Parser creates `BooleanFunction` data only; it does not evaluate expressions, build truth tables, build K-maps, or simplify logic.
 - The Truth Table Parser creates `BooleanFunction` data only; it does not evaluate expressions, build K-maps, or simplify logic.
 - Truth Table Parser comments are not supported; non-empty stray lines are treated as malformed input.
